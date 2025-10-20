@@ -8,7 +8,6 @@
   <div class="container mt-5 p-4 bg-white shadow rounded">
     <h2 class="text-center text-success mb-4">📅 WhatsApp Group Message Scheduler</h2>
 
-    <!-- Success / Error Messages -->
     <% if (success) { %>
       <div class="alert alert-success"><%= success %></div>
     <% } %>
@@ -18,14 +17,14 @@
 
     <% if (groups.length > 0) { %>
       <form action="/send" method="POST" enctype="multipart/form-data">
-        
-        <!-- 🔍 Search Box -->
+
+        <!-- Search Box -->
         <div class="mb-3">
           <label class="form-label">Search Groups:</label>
           <input type="text" id="groupSearch" class="form-control" placeholder="Type to search groups...">
         </div>
 
-        <!-- ✅ Groups List -->
+        <!-- Groups List -->
         <div class="mb-3" id="groupsList">
           <% groups.forEach(group => { %>
             <div class="form-check group-item">
@@ -35,19 +34,19 @@
           <% }); %>
         </div>
 
-        <!-- Message Input -->
+        <!-- Message -->
         <div class="mb-3">
           <label class="form-label">Message:</label>
           <textarea name="message" class="form-control" placeholder="Type your message..."></textarea>
         </div>
 
-        <!-- Image Upload -->
+        <!-- Image -->
         <div class="mb-3">
           <label class="form-label">Attach Image (optional):</label>
           <input type="file" name="image" class="form-control">
         </div>
 
-        <!-- Schedule Time -->
+        <!-- Schedule -->
         <div class="mb-3">
           <label class="form-label">Schedule Time (optional):</label>
           <input type="datetime-local" name="scheduleTime" class="form-control">
@@ -57,7 +56,6 @@
         <button type="submit" class="btn btn-success w-100">🚀 Send / Schedule Message</button>
       </form>
 
-      <!-- 🔹 JavaScript for Group Search -->
       <script>
         const searchInput = document.getElementById('groupSearch');
         const groupItems = document.querySelectorAll('.group-item');
@@ -66,17 +64,10 @@
           const filter = searchInput.value.toLowerCase();
           groupItems.forEach(item => {
             const label = item.querySelector('label').textContent.toLowerCase();
-            if(label.includes(filter)){
-              item.style.display = 'block';
-            } else {
-              item.style.display = 'none';
-            }
+            item.style.display = label.includes(filter) ? 'block' : 'none';
           });
         });
       </script>
-
-    <% } else { %>
-      <div class="alert alert-warning text-center">⚠️ No groups found. Please make sure WhatsApp is connected.</div>
     <% } %>
   </div>
 </body>
