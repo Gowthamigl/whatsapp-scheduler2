@@ -7,12 +7,12 @@ const bodyParser = require('body-parser');
 const schedule = require('node-schedule');
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
-// ✅ WhatsApp Client Setup
+// WhatsApp Client
 const client = new Client({
   authStrategy: new LocalAuth({ dataPath: path.join(__dirname, '.wwebjs_auth') }),
-  puppeteer: { headless: false, args: ['--no-sandbox', '--disable-setuid-sandbox'] },
+  puppeteer: { headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] },
 });
 
 client.on('qr', qr => {
@@ -23,25 +23,22 @@ client.on('qr', qr => {
 client.on('ready', () => console.log('✅ WhatsApp client is ready.'));
 client.initialize();
 
-// ✅ Middleware setup
+// Middleware
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(fileUpload());
 
-// ✅ Show all groups
+// Routes
 app.get('/', async (req, res) => {
   try {
     const chats = await client.getChats();
-    const groups = chats
-      .filter(c => c.isGroup)
-      .map(g => ({ id: g.id._serialized, name: g.name }));
+    const groups = chats.filter(c => c.isGroup).map(g => ({ id: g.id._serialized, name: g.name }));
     res.render('indexsearch', { groups, success: null, error: null });
   } catch (e) {
-    res.send('❌ WhatsApp not connected. Please scan QR.');
+    res.render('indexsearch', { groups: [], success: null, error: '❌ WhatsApp not connected. Please scan QR.' });
   }
 });
 
-// ✅ Send or Schedule group messages
 app.post('/send', async (req, res) => {
   const groupIds = req.body.groupIds;
   const message = req.body.message;
@@ -58,16 +55,12 @@ app.post('/send', async (req, res) => {
     media = new MessageMedia(imageFile.mimetype, imageFile.data.toString('base64'), imageFile.name);
   }
 
-  // 🔹 Message Sending Function
   const sendMessages = async () => {
     for (const groupId of selectedGroups) {
       try {
         const chat = await client.getChatById(groupId);
-        if (media) {
-          await chat.sendMessage(media, { caption: message });
-        } else {
-          await chat.sendMessage(message);
-        }
+        if (media) await chat.sendMessage(media, { caption: message });
+        else await chat.sendMessage(message);
         console.log(`✅ Sent to group: ${chat.name}`);
       } catch (err) {
         console.error(`❌ Failed to send to ${groupId}: ${err.message}`);
@@ -75,24 +68,18 @@ app.post('/send', async (req, res) => {
     }
   };
 
-  // 🔹 Scheduler Setup
   if (scheduleTime) {
     const date = new Date(scheduleTime);
-    schedule.scheduleJob(date, sendMessages);
-    console.log(`🕒 Message scheduled for ${date}`);
-    res.render('indexsearch', {
-      groups: [],
-      success: `🕒 Message scheduled for ${date}`,
-      error: null,
+    schedule.scheduleJob(date, async () => {
+      await sendMessages();
+      console.log('✅ Scheduled message sent successfully!');
     });
+    res.render('indexsearch', { groups: [], success: '🕒 Message scheduled successfully!', error: null });
   } else {
     await sendMessages();
-    res.render('indexsearch', {
-      groups: [],
-      success: '✅ Message sent successfully!',
-      error: null,
-    });
+    res.render('indexsearch', { groups: [], success: '✅ Message sent successfully!', error: null });
   }
 });
 
-app.listen(PORT, () => console.log(`🚀 Server running: http://localhost:${PORT}`));
+// Render uses process.env.PORT
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
