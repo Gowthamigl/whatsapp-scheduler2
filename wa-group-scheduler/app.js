@@ -1,7 +1,6 @@
 const express = require('express');
 const fileUpload = require('express-fileupload');
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
 const path = require('path');
 const bodyParser = require('body-parser');
 const schedule = require('node-schedule');
@@ -9,26 +8,37 @@ const schedule = require('node-schedule');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// WhatsApp Client
+// ✅ WhatsApp Client Setup
 const client = new Client({
   authStrategy: new LocalAuth({ dataPath: path.join(__dirname, '.wwebjs_auth') }),
-  puppeteer: { headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] },
+  puppeteer: {
+    headless: true, // cloud deploy
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-accelerated-2d-canvas',
+      '--disable-gpu',
+      '--window-size=1920,1080'
+    ]
+  }
 });
 
 client.on('qr', qr => {
   console.log('📱 Scan this QR code in your WhatsApp:');
-  qrcode.generate(qr, { small: true });
+  // cloud la QR code terminal la render pannum
+  console.log(qr);
 });
 
 client.on('ready', () => console.log('✅ WhatsApp client is ready.'));
 client.initialize();
 
-// Middleware
+// ✅ Middleware
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(fileUpload());
 
-// Routes
+// ✅ Home route - show groups
 app.get('/', async (req, res) => {
   try {
     const chats = await client.getChats();
@@ -39,6 +49,7 @@ app.get('/', async (req, res) => {
   }
 });
 
+// ✅ Send or schedule message
 app.post('/send', async (req, res) => {
   const groupIds = req.body.groupIds;
   const message = req.body.message;
@@ -81,5 +92,4 @@ app.post('/send', async (req, res) => {
   }
 });
 
-// Render uses process.env.PORT
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
