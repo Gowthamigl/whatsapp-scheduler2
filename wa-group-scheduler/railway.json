@@ -1,0 +1,6 @@
+{
+  "build": {
+    "builder": "Node",
+    "root": "wa-group-scheduler"
+  }
+}
